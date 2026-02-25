@@ -123,8 +123,22 @@ def setup_gemini():
             return None
         
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
-        return model
+        
+        # Try different model names in order of preference
+        models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-latest', 'gemini-pro']
+        
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                # Test the model with a simple request
+                test_response = model.generate_content("Hello")
+                st.success(f"✅ Connected to {model_name}")
+                return model
+            except Exception as model_error:
+                st.warning(f"⚠️ Model {model_name} not available: {str(model_error)[:100]}")
+                continue
+        
+        return None
     except Exception as e:
         st.error(f"Error setting up Gemini AI: {e}")
         return None
@@ -132,7 +146,8 @@ def setup_gemini():
 def get_ai_response(question, df, model):
     """Get AI response using Gemini."""
     if not model:
-        return "AI is not available. Please add your Google API key in the secrets.", None
+        # Fallback to basic analysis when AI is not available
+        return get_fallback_response(question, df), get_chart_for_question(question, df)
     
     try:
         # Create data summary
@@ -163,22 +178,55 @@ def get_ai_response(question, df, model):
         """
         
         response = model.generate_content(prompt)
-        
-        # Determine which chart to show
-        question_lower = question.lower()
-        chart = None
-        
-        if any(word in question_lower for word in ['gender', 'male', 'female', 'men', 'women']):
-            chart = create_survival_chart(df)
-        elif any(word in question_lower for word in ['age', 'young', 'old']):
-            chart = create_age_histogram(df)
-        elif any(word in question_lower for word in ['class', 'first', 'second', 'third']):
-            chart = create_class_chart(df)
+        chart = get_chart_for_question(question, df)
         
         return response.text, chart
         
     except Exception as e:
-        return f"Error getting AI response: {e}", None
+        st.error(f"AI temporarily unavailable: {str(e)[:100]}")
+        # Fallback to basic analysis
+        return get_fallback_response(question, df), get_chart_for_question(question, df)
+
+def get_fallback_response(question, df):
+    """Fallback analysis when AI is not available."""
+    question_lower = question.lower()
+    
+    if any(word in question_lower for word in ['alive', 'total', 'how many']):
+        total = len(df)
+        survivors = df['Survived'].sum()
+        return f"📊 **{survivors} passengers survived out of {total} total passengers** ({survivors/total*100:.1f}% survival rate). The tragedy claimed {total-survivors} lives."
+    
+    elif any(word in question_lower for word in ['gender', 'male', 'female', 'men', 'women']):
+        stats = df.groupby('Sex')['Survived'].agg(['count', 'sum', 'mean'])
+        male_survival = stats.loc['male', 'mean'] * 100
+        female_survival = stats.loc['female', 'mean'] * 100
+        
+        return f"👨‍👩‍👧‍👦 **Gender played a crucial role in survival**: Women had a {female_survival:.1f}% survival rate, while men had only {male_survival:.1f}%. This reflects the 'women and children first' evacuation protocol."
+    
+    elif any(word in question_lower for word in ['age', 'young', 'old']):
+        avg_age = df['Age'].mean()
+        return f"📈 **Age distribution**: The average passenger age was {avg_age:.1f} years, ranging from {df['Age'].min():.0f} to {df['Age'].max():.0f} years. Age influenced survival chances significantly."
+    
+    elif any(word in question_lower for word in ['class', 'first', 'second', 'third']):
+        class_survival = df.groupby('Pclass')['Survived'].mean() * 100
+        return f"🎫 **Social class strongly influenced survival**: 1st class passengers had {class_survival[1]:.1f}% survival rate, 2nd class {class_survival[2]:.1f}%, and 3rd class {class_survival[3]:.1f}%."
+    
+    else:
+        stats = get_basic_stats(df)
+        return f"🚢 **Titanic Overview**: {stats['total_passengers']} passengers, {stats['survival_rate']:.1f}% survival rate. Try asking about survival by gender, age, or passenger class for detailed insights!"
+
+def get_chart_for_question(question, df):
+    """Get appropriate chart based on question."""
+    question_lower = question.lower()
+    
+    if any(word in question_lower for word in ['gender', 'male', 'female', 'men', 'women']):
+        return create_survival_chart(df)
+    elif any(word in question_lower for word in ['age', 'young', 'old']):
+        return create_age_histogram(df)
+    elif any(word in question_lower for word in ['class', 'first', 'second', 'third']):
+        return create_class_chart(df)
+    
+    return None
 
 # Initialize session state
 if 'chat_history' not in st.session_state:
@@ -195,7 +243,7 @@ st.markdown('<h1 class="main-header">🚢 AI-Powered Titanic Analysis</h1>', uns
 if model:
     st.success("🤖 AI Assistant is ready!")
 else:
-    st.warning("⚠️ Add your Google API key in Secrets to enable AI responses")
+    st.info("📊 **Running in Analysis Mode** - Add your Google API key in Secrets to enable AI chat, or enjoy the built-in data analysis!")
 
 # Sidebar
 with st.sidebar:
