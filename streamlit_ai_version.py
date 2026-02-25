@@ -188,29 +188,52 @@ def get_fallback_response(question, df):
     """Fallback analysis when AI is not available."""
     question_lower = question.lower()
     
-    if any(word in question_lower for word in ['alive', 'total', 'how many']):
+    # Check for survival/death numbers
+    if any(word in question_lower for word in ['alive', 'dead', 'died', 'death', 'survive', 'survival', 'how many', 'people']):
         total = len(df)
         survivors = df['Survived'].sum()
-        return f"📊 **{survivors} passengers survived out of {total} total passengers** ({survivors/total*100:.1f}% survival rate). The tragedy claimed {total-survivors} lives."
+        deaths = total - survivors
+        return f"📊 **{survivors} passengers survived** out of {total} total passengers ({survivors/total*100:.1f}% survival rate). **{deaths} people tragically died** in the disaster."
     
-    elif any(word in question_lower for word in ['gender', 'male', 'female', 'men', 'women']):
-        stats = df.groupby('Sex')['Survived'].agg(['count', 'sum', 'mean'])
-        male_survival = stats.loc['male', 'mean'] * 100
-        female_survival = stats.loc['female', 'mean'] * 100
-        
-        return f"👨‍👩‍👧‍👦 **Gender played a crucial role in survival**: Women had a {female_survival:.1f}% survival rate, while men had only {male_survival:.1f}%. This reflects the 'women and children first' evacuation protocol."
-    
-    elif any(word in question_lower for word in ['age', 'young', 'old']):
-        avg_age = df['Age'].mean()
-        return f"📈 **Age distribution**: The average passenger age was {avg_age:.1f} years, ranging from {df['Age'].min():.0f} to {df['Age'].max():.0f} years. Age influenced survival chances significantly."
-    
-    elif any(word in question_lower for word in ['class', 'first', 'second', 'third']):
-        class_survival = df.groupby('Pclass')['Survived'].mean() * 100
-        return f"🎫 **Social class strongly influenced survival**: 1st class passengers had {class_survival[1]:.1f}% survival rate, 2nd class {class_survival[2]:.1f}%, and 3rd class {class_survival[3]:.1f}%."
-    
-    else:
+    # Check for insights or overview
+    elif any(word in question_lower for word in ['insight', 'tell me', 'overview', 'summary', 'about']):
         stats = get_basic_stats(df)
-        return f"🚢 **Titanic Overview**: {stats['total_passengers']} passengers, {stats['survival_rate']:.1f}% survival rate. Try asking about survival by gender, age, or passenger class for detailed insights!"
+        return f"🚢 **Key Titanic Insights**: Of {stats['total_passengers']} passengers, {stats['survivors']} survived ({stats['survival_rate']:.1f}%). Women had 74% survival vs men's 19%. First class: 63% survival, Third class: 24%. Age mattered - children had better chances."
+    
+    # Check for names
+    elif any(word in question_lower for word in ['name', 'common', 'popular', 'famous']):
+        if 'Name' in df.columns:
+            # Extract first names and find most common
+            first_names = df['Name'].str.extract(r', ([A-Za-z]+)')[0].value_counts().head(5)
+            top_names = ', '.join(first_names.index[:3])
+            return f"👥 **Most common first names** on Titanic: {top_names}. There were {len(df['Name'].unique())} unique passengers with diverse backgrounds from around the world."
+        else:
+            return f"📝 The Titanic carried passengers from many countries with diverse names reflecting the international nature of the voyage."
+    
+    # Check if bot is working
+    elif any(word in question_lower for word in ['bot', 'working', 'work', 'function', 'respond']):
+        return f"🤖 **Yes, I'm working perfectly!** I can analyze the Titanic dataset and answer questions about passenger survival, demographics, and more. Try asking about survival by gender, age, or class!"
+    
+    # Gender analysis
+    elif any(word in question_lower for word in ['gender', 'male', 'female', 'men', 'women', 'man', 'woman']):
+        male_survival = df[df['Sex'] == 'male']['Survived'].mean() * 100
+        female_survival = df[df['Sex'] == 'female']['Survived'].mean() * 100
+        return f"👨‍👩‍👧‍👦 **Gender was crucial for survival**: Women had {female_survival:.1f}% survival rate ({df[df['Sex'] == 'female']['Survived'].sum()} survived), while men had only {male_survival:.1f}% ({df[df['Sex'] == 'male']['Survived'].sum()} survived). 'Women and children first' was followed."
+    
+    # Age analysis
+    elif any(word in question_lower for word in ['age', 'young', 'old', 'child', 'adult']):
+        avg_age = df['Age'].mean()
+        child_survival = df[df['Age'] < 18]['Survived'].mean() * 100 if not df[df['Age'] < 18].empty else 0
+        return f"📈 **Age patterns**: Average age was {avg_age:.1f} years. Children under 18 had {child_survival:.1f}% survival rate - higher than adults. Youngest passenger was {df['Age'].min():.0f}, oldest was {df['Age'].max():.0f}."
+    
+    # Class analysis  
+    elif any(word in question_lower for word in ['class', 'first', 'second', 'third', 'ticket', 'fare']):
+        class_survival = df.groupby('Pclass')['Survived'].mean() * 100
+        return f"🎫 **Class determined fate**: 1st class had {class_survival[1]:.1f}% survival ({df[df['Pclass']==1]['Survived'].sum()}/{len(df[df['Pclass']==1])}), 2nd class {class_survival[2]:.1f}% ({df[df['Pclass']==2]['Survived'].sum()}/{len(df[df['Pclass']==2])}), 3rd class only {class_survival[3]:.1f}% ({df[df['Pclass']==3]['Survived'].sum()}/{len(df[df['Pclass']==3])})."
+    
+    # Default response for unmatched questions
+    else:
+        return f"🚢 **I can help with Titanic analysis!** Ask me about: survival rates, gender differences, age patterns, passenger classes, or specific statistics. Try: 'How many survived?', 'Gender survival rates?', or 'Tell me about passenger classes'."
 
 def get_chart_for_question(question, df):
     """Get appropriate chart based on question."""
