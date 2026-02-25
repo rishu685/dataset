@@ -1,0 +1,10 @@
+# Streamlit-specific deployment requirements
+# Use this file if the main requirements.txt has issues
+
+streamlit
+pandas
+numpy
+plotly
+requests
+langchain-google-genai
+google-generativeai

@@ -2,14 +2,34 @@
 
 A friendly chatbot that analyzes the famous Titanic dataset using natural language queries. Built with FastAPI, LangChain, and Streamlit.
 
+## 🚀 Quick Deploy
+
+**Easy Deployment (No setup required):**
+1. **Streamlit Cloud**: Use `streamlit_standalone.py` - works out of the box!
+2. **With AI**: Use full app and set `GEMINI_API_KEY` in secrets
+
+📖 **[Full Deployment Guide](DEPLOY.md)** | 🔗 **[Live Demo](https://your-app-url.streamlit.app)**
+
 ## Features 🌟
 
-- **AI-Powered Analysis**: Google Gemini AI for intelligent responses
+- **AI-Powered Analysis**: Google Gemini AI for intelligent responses  
 - **Natural Language Queries**: Ask complex questions in plain English
 - **Visual Insights**: Automatic charts and graphs
 - **Interactive Interface**: Clean and intuitive Streamlit frontend
 - **Fast API Backend**: RESTful API with FastAPI
 - **Smart Visualizations**: Context-aware chart generation
+
+## File Structure 📁
+
+```
+titanic-chatbot/
+├── streamlit_standalone.py    # 🎯 Standalone deployment version
+├── frontend/streamlit_app.py  # 💻 Full frontend with AI
+├── backend/                   # 🔙 FastAPI backend + AI
+├── requirements.txt          # 📦 Full dependencies  
+├── requirements-minimal.txt  # 📦 Minimal for deployment
+└── DEPLOY.md                # 🚀 Deployment guide
+```
 
 ## Example Questions 🤔
 

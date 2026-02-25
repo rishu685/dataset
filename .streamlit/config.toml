@@ -1,0 +1,11 @@
+[general]
+email = ""
+
+[server]
+headless = true
+enableCORS = false
+port = 8501
+
+[browser]
+serverAddress = "0.0.0.0"
+gatherUsageStats = false
