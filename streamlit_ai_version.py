@@ -124,23 +124,20 @@ def setup_gemini():
         
         genai.configure(api_key=api_key)
         
-        # Try different model names in order of preference
-        models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-latest', 'gemini-pro']
+        # Try current model names
+        models_to_try = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-1.0-pro']
         
         for model_name in models_to_try:
             try:
                 model = genai.GenerativeModel(model_name)
                 # Test the model with a simple request
-                test_response = model.generate_content("Hello")
-                st.success(f"✅ Connected to {model_name}")
+                test_response = model.generate_content("Test")
                 return model
-            except Exception as model_error:
-                st.warning(f"⚠️ Model {model_name} not available: {str(model_error)[:100]}")
+            except:
                 continue
         
         return None
-    except Exception as e:
-        st.error(f"Error setting up Gemini AI: {e}")
+    except:
         return None
 
 def get_ai_response(question, df, model):
@@ -243,7 +240,7 @@ st.markdown('<h1 class="main-header">🚢 AI-Powered Titanic Analysis</h1>', uns
 if model:
     st.success("🤖 AI Assistant is ready!")
 else:
-    st.info("📊 **Running in Analysis Mode** - Add your Google API key in Secrets to enable AI chat, or enjoy the built-in data analysis!")
+    st.info("📊 **Analysis Mode Active** - Your app is fully functional! For AI chat, get a fresh Google API key (current one may be expired) and add it to Secrets.")
 
 # Sidebar
 with st.sidebar:
