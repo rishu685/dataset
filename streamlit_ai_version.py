@@ -310,6 +310,12 @@ with col1:
                     "content": answer,
                     "chart": chart
                 })
+                
+                # Update chart display immediately if there's a chart
+                if chart:
+                    with col2:
+                        chart_placeholder.plotly_chart(chart, use_container_width=True, key="current_chart")
+                
                 st.rerun()
     else:
         st.error("Dataset not available. Please check your internet connection.")
@@ -322,6 +328,18 @@ with col2:
 if st.session_state.chat_history:
     st.header("💬 Chat History")
     
+    # Display the most recent chart in the visualization panel
+    latest_chart = None
+    for message in reversed(st.session_state.chat_history):
+        if message.get("chart") and message["type"] == "bot":
+            latest_chart = message["chart"]
+            break
+    
+    if latest_chart:
+        with col2:
+            chart_placeholder.plotly_chart(latest_chart, use_container_width=True, key="latest_chart")
+    
+    # Display chat messages
     for i, message in enumerate(st.session_state.chat_history):
         if message["type"] == "user":
             st.markdown(
@@ -333,11 +351,6 @@ if st.session_state.chat_history:
                 f'<div class="bot-message"><strong>🤖 AI:</strong> {message["content"]}</div>',
                 unsafe_allow_html=True
             )
-            
-            # Display chart if available
-            if message.get("chart"):
-                with col2:
-                    chart_placeholder.plotly_chart(message["chart"], use_container_width=True)
 
 # Quick actions
 if not df.empty:
